@@ -1,0 +1,10 @@
+The following program tests your ability to develop a simple C++ program and specify adequate testing:
+
+Your program should read three integer values. The three values are interpreted as representing the integer lengths of the sides of a triangle. 
+The program prints as message that states whether the triangle is equilateral (three side equal), isosceles (two side equal) or scalene 
+(no side equal).
+
+Instructions:
+Design and implement the program in C++ (with error handling where appropriate)
+Develop a set of test cases that you feel will adequately test this program.
+Apply the test cases to your implementation.
