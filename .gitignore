@@ -1,3 +1,8 @@
+# NON CODING FILES (MAY WANT TO CHANGE THIS BACK LATER)
+*.pdf
+*.docx
+*program
+
 # Prerequisites
 *.d
 
@@ -39,3 +44,6 @@
 
 # debug information files
 *.dwo
+
+# VS Code files
+.vscode/
