@@ -19,9 +19,10 @@ Probability& Probability::operator=(double v) {
 }
 
 // Getter
-double Probability::getProbability() const { 
-  return value; 
-}
+// Not needed since I made it so probability can be used as double!
+// double Probability::getProbability() const { 
+//   return value; 
+// }
 
 Probability::operator double() const { 
   return value; 

@@ -3,12 +3,6 @@
 
 #include <stdexcept>
 
-// Binary operators as non-member functions
-Probability operator&(const Probability& lhs, const Probability& rhs);
-Probability operator|(const Probability& lhs, const Probability& rhs);
-Probability operator^(const Probability& lhs, const Probability& rhs);
-Probability operator-(const Probability& lhs, const Probability& rhs);
-
 class Probability {
   public:
     // Constructor from double
@@ -18,8 +12,10 @@ class Probability {
     Probability& operator=(double v);
 
     // Getter
-    double getProbability() const;
+    // Not needed since I made it so probability can be used as double!
+    // double getProbability() const;
 
+    // Probability can be used anywhere as a double
     operator double() const;
 
     // Canonical assignment operators
@@ -37,5 +33,11 @@ class Probability {
     // Helper to validate values
     static double checkProbability(double v);
 };
+
+// Binary operators as non-member functions
+Probability operator&(const Probability& lhs, const Probability& rhs);
+Probability operator|(const Probability& lhs, const Probability& rhs);
+Probability operator^(const Probability& lhs, const Probability& rhs);
+Probability operator-(const Probability& lhs, const Probability& rhs);
 
 #endif 

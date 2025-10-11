@@ -9,14 +9,14 @@ int main() {
     Probability A(0.7);
     Probability B(0.3);
 
-    std::cout << "A = " << A.getProbability() << "\n";
-    std::cout << "B = " << B.getProbability() << "\n";
+    std::cout << "A = " << A << "\n";
+    std::cout << "B = " << B << "\n";
 
-    std::cout << "A & B = " << (A & B).getProbability() << "\n";
-    std::cout << "A | B = " << (A | B).getProbability() << "\n";
-    std::cout << "A ^ B = " << (A ^ B).getProbability() << "\n";
-    std::cout << "A - B = " << (A - B).getProbability() << "\n";
-    std::cout << "~A = "   << (~A).getProbability() << "\n";
+    std::cout << "A & B = " << (A & B) << "\n";
+    std::cout << "A | B = " << (A | B) << "\n";
+    std::cout << "A ^ B = " << (A ^ B) << "\n";
+    std::cout << "A - B = " << (A - B) << "\n";
+    std::cout << "~A = "   << (~A) << "\n";
 
     std::cout << "\nEXAMPLE 2:" << std::endl;
     Probability C;
@@ -24,14 +24,14 @@ int main() {
     Probability D;
     D = 0.0;
 
-    std::cout << "C = " << C.getProbability() << "\n";
-    std::cout << "D = " << D.getProbability() << "\n";
+    std::cout << "C = " << C << "\n";
+    std::cout << "D = " << D << "\n";
 
-    std::cout << "C & D = " << (C & D).getProbability() << "\n";
-    std::cout << "C | D = " << (C | D).getProbability() << "\n";
-    std::cout << "C ^ D = " << (C ^ D).getProbability() << "\n";
-    std::cout << "C - D = " << (C - D).getProbability() << "\n";
-    std::cout << "~C = "   << (~C).getProbability() << "\n";
+    std::cout << "C & D = " << (C & D) << "\n";
+    std::cout << "C | D = " << (C | D) << "\n";
+    std::cout << "C ^ D = " << (C ^ D) << "\n";
+    std::cout << "C - D = " << (C - D) << "\n";
+    std::cout << "~C = "   << (~C) << "\n";
 
     // Invalid value
     std::cout << "\nEXAMPLE 3:" << std::endl;
