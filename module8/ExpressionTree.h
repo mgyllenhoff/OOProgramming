@@ -2,21 +2,25 @@
 #include <memory>
 #include <map>
 
+// Forward declaration of Node class
 class Node;
+
 // Shared pointer allows sharing subtrees!
 using node_ptr = std::shared_ptr<Node>;
+
+// Symbol table for variables
 using SymbolTable = std::map<std::string, double>;
 
-// Non-member operator << for help with printing
+// Non-member operator << for expression tree nodes
 std::ostream& operator<<(std::ostream& os, const node_ptr& node);
 
 // Base class for all nodes in the expression tree
 class Node {
     public:
-        // Destructor
+        // Virtual destructor
         virtual ~Node() = default;
 
-        // Evaluate an expression tree
+        // Evaluate an expression tree with a symbol table
         virtual double evaluate(const SymbolTable& symbols) const = 0;
 
         // Return string representation
@@ -50,12 +54,12 @@ class Variable : public Node {
 
 // Binary operation abstract class (so I do not need to repeat for each binary operation)
 class BinaryOp : public Node {
-public:
-    BinaryOp(node_ptr l, node_ptr r) : left(std::move(l)), right(std::move(r)) {}
+    public:
+        BinaryOp(node_ptr l, node_ptr r) : left(std::move(l)), right(std::move(r)) {}
 
-protected:
-    node_ptr left;
-    node_ptr right;
+    protected:
+        node_ptr left;
+        node_ptr right;
 };
 
 // Addition of nodes

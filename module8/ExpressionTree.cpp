@@ -1,8 +1,7 @@
 #include "ExpressionTree.h"
-#include <iostream>
 #include <sstream>
 
-// To be used with printing
+// To be used with output
 std::ostream& operator<<(std::ostream& os, const node_ptr& node) {
     if (!node) {
         os << "(null)";
@@ -21,13 +20,12 @@ double Constant::evaluate(const SymbolTable& symbols) const {
 
 std::string Constant::toString() const {
     std::ostringstream ss;
-    // keep some decimal info; ostream formatting is simple here
     ss << value;
     return ss.str();
 }
 
 node_ptr Constant::derivative(const std::string& var) const {
-    // derivative of a constant is 0.0
+    // Derivative of constant is zero
     return std::make_shared<Constant>(0.0);
 }
 
@@ -50,7 +48,7 @@ std::string Variable::toString() const {
 }
 
 node_ptr Variable::derivative(const std::string& var) const {
-    // Derivative of constant is 1.0 when variable matches, otherwise 0.0
+    // d/dx(x) = 1, d/dx(y) = 0
     if (name == var) {
         return std::make_shared<Constant>(1.0);
     }
@@ -72,7 +70,10 @@ std::string Add::toString() const {
 
 node_ptr Add::derivative(const std::string& var) const {
     // d(u+v) = du + dv
-    return std::make_shared<Add>(left->derivative(var), right->derivative(var));
+    return std::make_shared<Add>(
+        left->derivative(var), 
+        right->derivative(var)
+    );
 }
 
 /*
@@ -90,7 +91,10 @@ std::string Sub::toString() const {
 
 node_ptr Sub::derivative(const std::string& var) const {
     // d(u-v) = du - dv
-    return std::make_shared<Sub>(left->derivative(var), right->derivative(var));
+    return std::make_shared<Sub>(
+        left->derivative(var), 
+        right->derivative(var)
+    );
 }
 
 /*

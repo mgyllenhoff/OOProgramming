@@ -1,25 +1,34 @@
 #include "Elevator.h"
 
+// ============================================================================
+// Helper function: trims whitespace from both ends of a string
+// Used while parsing CSV data (to clean up lines that have spaces)
+// ============================================================================
 static inline void trimInPlace(std::string& s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch){ return !std::isspace(ch); }));
     s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch){ return !std::isspace(ch); }).base(), s.end());
 }
 
-/* ---------------- Passenger ---------------- */
-// Constructor for a passenger
+// ============================================================================
+// CLASS: Passenger
+// Represents a single building passenger requesting elevator transport
+// ============================================================================
 Passenger::Passenger(int i, int sTime, int sFloor, int eFloor)
     : id(i), startTime(sTime), startFloor(sFloor), endFloor(eFloor) {}
+// Note: boardedTime and exitTime start as -1 until those events occur.
 
-/* ---------------- Floor ---------------- */
-// Constructor for a floor
+// ============================================================================
+// CLASS: Floor
+// Represents a single building floor, holding waiting passengers
+// ============================================================================
 Floor::Floor(int n) : number(n) {}
 
-// Add a passenger to the floor's waiting queue
-void Floor::addWaiting(std::shared_ptr<Passenger> p) { 
-    waiting.push(p); 
+// Adds a passenger to the waiting queue for this floor
+void Floor::addWaiting(std::shared_ptr<Passenger> p) {
+    waiting.push(p);
 }
 
-// Get passengers up to the elevator's capacity
+// Returns a vector of up to "capacity" waiting passengers to board an elevator
 std::vector<std::shared_ptr<Passenger>> Floor::getWaitingUpToCapacity(int capacity) {
     std::vector<std::shared_ptr<Passenger>> boarding;
     while (!waiting.empty() && (int)boarding.size() < capacity) {
@@ -29,131 +38,189 @@ std::vector<std::shared_ptr<Passenger>> Floor::getWaitingUpToCapacity(int capaci
     return boarding;
 }
 
-// Return how many passengers are waiting on this floor
-size_t Floor::waitingCount() const { 
-    return waiting.size(); 
+// Returns how many passengers are waiting at this floor
+size_t Floor::waitingCount() const {
+    return waiting.size();
 }
 
-/* ---------------- Elevator ---------------- */
-// Constructor for an elevator
+// ============================================================================
+// CLASS: Elevator
+// Each elevator acts autonomously — it decides what to do every simulation tick
+// ============================================================================
 Elevator::Elevator(int id, int moveTime)
-    : id_(id), currentFloor_(1), state_(STOPPED),
-      moveTimer_(moveTime), stopTimer_(0),
-      moveTimePerFloor_(moveTime), targetFloor_(-1) {}
+    : id_(id),
+      currentFloor_(1),            // All elevators start at floor 1
+      state_(STOPPED),             // Initially idle
+      moveTimer_(moveTime),        // Timer counts seconds until next floor move
+      stopTimer_(0),
+      moveTimePerFloor_(moveTime), // Movement speed (10s or 5s)
+      targetFloor_(-1) {}          // No initial target
 
-// Elevator info getters
+// ------------- GETTERS -------------------
 int Elevator::id() const { return id_; }
 int Elevator::currentFloor() const { return currentFloor_; }
 ElevatorState Elevator::state() const { return state_; }
 int Elevator::passengerCount() const { return passengers_.size(); }
 bool Elevator::isIdle() const { return state_ == STOPPED && passengers_.empty(); }
 
-// Unload passengers whose destination is the current floor
+// ============================================================================
+// dischargePassengers()
+// Unloads passengers whose destination floor equals the current floor
+// Updates their exit times and marks them complete
+// ============================================================================
 void Elevator::dischargePassengers(int time, std::vector<std::shared_ptr<Passenger>>& completed) {
     auto it = passengers_.begin();
     while (it != passengers_.end()) {
-        if ((*it)->endFloor == currentFloor_) { // passenger reached destination
-            (*it)->exitTime = time;             // record exit time
-            (*it)->completed = true;            // mark as completed
-            completed.push_back(*it);           // add to completed list
-            it = passengers_.erase(it);         // remove from elevator
+        if ((*it)->endFloor == currentFloor_) {
+            // Passenger’s destination reached
+            (*it)->exitTime = time;
+            (*it)->completed = true;
+            completed.push_back(*it);
+
+            std::cout << "[t=" << time << "] Elevator " << id_
+                      << ": Passenger " << (*it)->id << " exits at floor "
+                      << currentFloor_ << "\n";
+            it = passengers_.erase(it); // remove passenger from elevator list
         } else ++it;
     }
 }
 
-// Board passengers from a floor up to elevator capacity
+// ============================================================================
+// boardPassengers()
+// Boards new passengers waiting on the current floor (up to capacity)
+// ============================================================================
 void Elevator::boardPassengers(int time, std::shared_ptr<Floor> floor) {
     while ((int)passengers_.size() < ELEVATOR_CAPACITY && !floor->waiting.empty()) {
-        auto p = floor->waiting.front();
-        floor->waiting.pop();
-        p->boardedTime = time; // record boarding time
-        passengers_.push_back(p); // add to elevator
+        auto p = floor->waiting.front(); // first waiting passenger
+        floor->waiting.pop();            // remove from queue
+        p->boardedTime = time;           // record when they boarded
+        passengers_.push_back(p);        // add to elevator
+        std::cout << "[t=" << time << "] Elevator " << id_
+                  << ": Passenger " << p->id << " boards at floor "
+                  << p->startFloor << " -> " << p->endFloor << "\n";
     }
 }
 
-// Find the nearest floor with waiting passengers
+// ============================================================================
+// findNearestWaitingFloor()
+// Searches all floors for one that currently has waiting passengers
+// Returns the closest floor number, or std::nullopt if none are waiting
+// ============================================================================
 std::optional<int> Elevator::findNearestWaitingFloor(const std::vector<std::shared_ptr<Floor>>& floors) {
     int nearest = -1;
     int minDist = MAX_FLOOR + 1;
+
+    // Check all floors for waiting passengers
     for (auto& f : floors) {
         if (f && !f->waiting.empty()) {
-            int dist = std::abs(f->number - currentFloor_); // distance from current floor
+            int dist = std::abs(f->number - currentFloor_);
             if (dist < minDist) {
                 minDist = dist;
                 nearest = f->number;
             }
         }
     }
-    if (nearest == -1) return std::nullopt; // no waiting passengers
+
+    if (nearest == -1) return std::nullopt;
     return nearest;
 }
 
-// Advance the elevator by one tick (simulation step)
-void Elevator::tick(int currentTime, std::vector<std::shared_ptr<Floor>>& floors,
+// ============================================================================
+// tick()
+// Called every simulated second
+// Controls elevator movement, stopping, boarding, and discharging logic
+// ============================================================================
+void Elevator::tick(int currentTime,
+                    std::vector<std::shared_ptr<Floor>>& floors,
                     std::vector<std::shared_ptr<Passenger>>& completed) {
-    // STOPPING → STOPPED
+
+    // ----------------- Case 1: Elevator is currently STOPPING -----------------
     if (state_ == STOPPING) {
-        stopTimer_--;
-        if (stopTimer_ <= 0) state_ = STOPPED;
-        return;
+        stopTimer_--; // count down the 2-second stopping delay
+
+        if (stopTimer_ <= 0) {
+            // Once stopping time is done, elevator becomes STOPPED
+            state_ = STOPPED;
+            std::cout << "[t=" << currentTime << "] Elevator " << id_
+                      << " now STOPPED at floor " << currentFloor_ << "\n";
+        }
+        return; // no further actions this second
     }
 
-    // MOVING UP
+    // ----------------- Case 2: Elevator MOVING UP -----------------
     if (state_ == MOVING_UP) {
-        moveTimer_--; // decrement movement timer
-        if (moveTimer_ <= 0) { // time to move to next floor
-            moveTimer_ = moveTimePerFloor_;
-            if (currentFloor_ < MAX_FLOOR) currentFloor_++; // move up
+        moveTimer_--; // count down time to next floor
 
-            // Check if elevator should stop at this floor
+        // If the elevator reached the next floor
+        if (moveTimer_ <= 0) {
+            moveTimer_ = moveTimePerFloor_; // reset timer for next movement
+            if (currentFloor_ < MAX_FLOOR) currentFloor_++;
+
+            // Check if elevator should stop here (to pick up or drop off)
             bool stopHere = false;
             for (auto& p : passengers_)
-                if (p->endFloor == currentFloor_) stopHere = true; // passenger needs to get off
-            if (!floors[currentFloor_]->waiting.empty()) stopHere = true; // passengers waiting to board
+                if (p->endFloor == currentFloor_) stopHere = true;
+            if (!floors[currentFloor_]->waiting.empty()) stopHere = true;
+
             if (stopHere) {
+                // Begin stopping sequence (2 seconds)
                 state_ = STOPPING;
-                stopTimer_ = 2; // stop for 2 ticks
+                stopTimer_ = 2;
+                std::cout << "[t=" << currentTime << "] Elevator " << id_
+                          << " stopping at floor " << currentFloor_ << "\n";
             } else if (currentFloor_ >= MAX_FLOOR) {
-                state_ = MOVING_DOWN; // bounce down if reached top
+                // Reached top of building — reverse direction
+                state_ = MOVING_DOWN;
+                std::cout << "[t=" << currentTime << "] Elevator " << id_
+                          << " reached top, reversing\n";
             }
         }
         return;
     }
 
-    // MOVING DOWN
+    // ----------------- Case 3: Elevator MOVING DOWN -----------------
     if (state_ == MOVING_DOWN) {
-        moveTimer_--;
-        if (moveTimer_ <= 0) { // time to move to next floor
+        moveTimer_--; // countdown to next floor
+        if (moveTimer_ <= 0) {
             moveTimer_ = moveTimePerFloor_;
-            if (currentFloor_ > 1) currentFloor_--; // move down
+            if (currentFloor_ > 1) currentFloor_--;
 
-            // Check if elevator should stop at this floor
             bool stopHere = false;
             for (auto& p : passengers_)
-                if (p->endFloor == currentFloor_) stopHere = true;  // passenger needs to get off
-            if (!floors[currentFloor_]->waiting.empty()) stopHere = true; // passengers waiting to board
+                if (p->endFloor == currentFloor_) stopHere = true;
+            if (!floors[currentFloor_]->waiting.empty()) stopHere = true;
+
             if (stopHere) {
                 state_ = STOPPING;
-                stopTimer_ = 2; // stop for 2 ticks
+                stopTimer_ = 2;
+                std::cout << "[t=" << currentTime << "] Elevator " << id_
+                          << " stopping at floor " << currentFloor_ << "\n";
             } else if (currentFloor_ <= 1) {
-                state_ = MOVING_UP; // bounce up if reached bottom
+                // At bottom — reverse direction
+                state_ = MOVING_UP;
+                std::cout << "[t=" << currentTime << "] Elevator " << id_
+                          << " reached bottom, reversing\n";
             }
         }
         return;
     }
 
-    // STOPPED
+    // ----------------- Case 4: Elevator STOPPED (idle or at floor) -----------------
     if (state_ == STOPPED) {
-        dischargePassengers(currentTime, completed); // unload passengers
-        boardPassengers(currentTime, floors[currentFloor_]); // board waiting passengers
+        // Step 1: Drop off any passengers whose destination is this floor
+        dischargePassengers(currentTime, completed);
 
+        // Step 2: Pick up any waiting passengers on this floor
+        boardPassengers(currentTime, floors[currentFloor_]);
+
+        // Step 3: Decide what to do next
         if (!passengers_.empty()) {
-            // If there are passengers, set target floor based on first passenger
+            // Have passengers onboard → go toward the first passenger’s destination
             targetFloor_ = passengers_.front()->endFloor;
             state_ = (targetFloor_ > currentFloor_) ? MOVING_UP : MOVING_DOWN;
             moveTimer_ = moveTimePerFloor_;
         } else {
-            // If no passengers, find nearest floor with waiting passengers
+            // No passengers → check if someone is waiting elsewhere
             auto nextFloor = findNearestWaitingFloor(floors);
             if (nextFloor) {
                 targetFloor_ = *nextFloor;
@@ -164,17 +231,25 @@ void Elevator::tick(int currentTime, std::vector<std::shared_ptr<Floor>>& floors
     }
 }
 
-/* ---------------- Simulation ---------------- */
-// Constructor initializes floors and elevators
+// ============================================================================
+// CLASS: Simulation
+// Controls the overall system, manages all elevators, passengers, and timing
+// ============================================================================
 Simulation::Simulation(int moveTime) {
+    // Create 100 floors (1-indexed)
     floors.resize(MAX_FLOOR + 1);
-    for (int i = 1; i <= MAX_FLOOR; ++i) // floor 0 unused
+    for (int i = 1; i <= MAX_FLOOR; ++i)
         floors[i] = std::make_shared<Floor>(i);
+
+    // Create NUM_ELEVATORS elevator objects
     for (int i = 0; i < NUM_ELEVATORS; ++i)
         elevators.emplace_back(i + 1, moveTime);
 }
 
-// Load passenger requests from a CSV file
+// ============================================================================
+// loadCSV()
+// Reads passenger data from the CSV file and stores it by arrival time
+// ============================================================================
 void Simulation::loadCSV(const std::string& path) {
     std::ifstream in(path);
     if (!in.is_open()) throw std::runtime_error("Cannot open CSV " + path);
@@ -185,111 +260,112 @@ void Simulation::loadCSV(const std::string& path) {
         if (line.empty()) continue;
         std::stringstream ss(line);
         std::string a, b, c;
+
+        // Parse 3 columns: Start Time, Start Floor, End Floor
         if (!std::getline(ss, a, ',')) continue;
         if (!std::getline(ss, b, ',')) continue;
         if (!std::getline(ss, c, ',')) continue;
+
         trimInPlace(a); trimInPlace(b); trimInPlace(c);
-        if (a == "Start Time(s)") continue;
+        if (a == "Start Time(s)") continue; // skip header line
 
         int startTime = std::stoi(a);
         int startFloor = std::stoi(b);
         int endFloor = std::stoi(c);
 
-        // Ignore invalid floors
         if (startFloor < 1 || startFloor > MAX_FLOOR || endFloor < 1 || endFloor > MAX_FLOOR)
-            continue;
+            continue; // ignore invalid data
 
+        // Create passenger and store it globally and by start time
         auto p = std::make_shared<Passenger>(++id, startTime, startFloor, endFloor);
-
-        // If start==end, passenger is already done
-        if (startFloor == endFloor) {
-            p->boardedTime = startTime;
-            p->exitTime = startTime;
-            p->completed = true;
-            allPassengers.push_back(p);
-            completedCount++;
-        } else {
-            allPassengers.push_back(p);
-            arrivalsByTime.emplace(startTime, p);
-        }
+        allPassengers.push_back(p);
+        arrivalsByTime.emplace(startTime, p);
     }
+
     totalPassengers = allPassengers.size();
+    std::cout << "Loaded " << totalPassengers << " passengers from " << path << "\n";
 }
 
-// Release passengers that arrive at the current simulation time
+// ============================================================================
+// releaseArrivalsAtTime()
+// Releases passengers whose startTime equals the current simulation time
+// Adds them to the waiting queue on their starting floor
+// ============================================================================
 void Simulation::releaseArrivalsAtTime(int currentTime) {
     auto range = arrivalsByTime.equal_range(currentTime);
     for (auto it = range.first; it != range.second; ++it) {
         auto p = it->second;
-        if (p->startFloor >= 1 && p->startFloor <= MAX_FLOOR)
-            floors[p->startFloor]->addWaiting(p);
+        floors[p->startFloor]->addWaiting(p);
+
+        std::cout << "[t=" << currentTime << "] Passenger " << p->id
+                  << " arrives on floor " << p->startFloor
+                  << " -> " << p->endFloor << "\n";
     }
     arrivalsByTime.erase(range.first, range.second);
 }
 
-// Run the full simulation
+// ============================================================================
+// run()
+// Executes the full simulation second by second until all passengers complete
+// ============================================================================
 std::pair<double, double> Simulation::run() {
     int currentTime = 0;
-    const int IDLE_LIMIT = 10000; // prevent infinite stalling
+    const int IDLE_LIMIT = 60000; // safety limit to detect stalls
     int idleTicks = 0;
     std::vector<std::shared_ptr<Passenger>> completedNow;
 
+    // Loop until every passenger has exited an elevator
     while (completedCount < totalPassengers) {
-        releaseArrivalsAtTime(currentTime); // release new passengers
+        // 1. Add new passengers who arrive at this time
+        releaseArrivalsAtTime(currentTime);
 
+        // 2. Let each elevator perform its own tick of logic
         int beforeCompleted = completedCount;
-        std::vector<int> beforeFloors, beforeStates;
-        beforeFloors.reserve(elevators.size());
-        beforeStates.reserve(elevators.size());
-        for (auto& e : elevators) {
-            beforeFloors.push_back(e.currentFloor());
-            beforeStates.push_back(static_cast<int>(e.state()));
-        }
-
         completedNow.clear();
-        for (auto& e : elevators) {
-            e.tick(currentTime, floors, completedNow); // move each elevator one tick
-        }
+        for (auto& e : elevators)
+            e.tick(currentTime, floors, completedNow);
+
+        // 3. Update total completions
         completedCount += completedNow.size();
 
-        // Detect if simulation is making progress
-        bool madeProgress = (completedCount > beforeCompleted);
-        for (size_t i = 0; i < elevators.size(); ++i) {
-            if (elevators[i].currentFloor() != beforeFloors[i] ||
-                static_cast<int>(elevators[i].state()) != beforeStates[i]) {
-                madeProgress = true;
-                break;
-            }
-        }
+        // 4. Stall detection (if simulation not progressing)
+        if (completedCount > beforeCompleted) idleTicks = 0;
+        else idleTicks++;
 
-        if (!madeProgress) idleTicks++; else idleTicks = 0;
-
-        // Stall detection
         if (idleTicks > IDLE_LIMIT) {
             std::cerr << "Simulation stalled at t=" << currentTime
                       << " completed=" << completedCount << "/" << totalPassengers << "\n";
-            throw std::runtime_error("Simulation stalled");
+            break;
         }
 
-        currentTime++;
+        // 5. Periodic progress output every 600s (10 minutes)
+        if (currentTime % 600 == 0)
+            std::cout << "[t=" << currentTime << "] progress: "
+                      << completedCount << "/" << totalPassengers << " done\n";
+
+        ++currentTime; // move simulation clock forward
     }
 
-    // Calculate average wait and travel times
+    // ========================================================================
+    // Compute results: average wait and travel times
+    // ========================================================================
     double totalWait = 0, totalTravel = 0;
     int count = 0;
     for (auto& p : allPassengers) {
-        if (!p->completed) continue;
-        int wait = (p->boardedTime == -1) ? 0 : (p->boardedTime - p->startTime);
-        int travel = (p->exitTime == -1 || p->boardedTime == -1) ? 0 : (p->exitTime - p->boardedTime);
-        totalWait += wait;
-        totalTravel += travel;
-        count++;
+        if (p->boardedTime >= 0 && p->exitTime >= 0) {
+            totalWait += p->boardedTime - p->startTime;
+            totalTravel += p->exitTime - p->boardedTime;
+            count++;
+        }
     }
 
     double avgWait = totalWait / count;
     double avgTravel = totalTravel / count;
 
-    std::cout << "Average wait time: " << avgWait << " s\n";
+    // Final output summary
+    std::cout << "\n=== RESULTS ===\n";
+    std::cout << "Total passengers completed: " << count << "/" << totalPassengers << "\n";
+    std::cout << "Average wait time:   " << avgWait << " s\n";
     std::cout << "Average travel time: " << avgTravel << " s\n";
 
     return {avgWait, avgTravel};

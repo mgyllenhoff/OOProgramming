@@ -12,17 +12,20 @@
 #include <fstream>
 #include <sstream>
 
-constexpr int MAX_FLOOR = 100;
-constexpr int ELEVATOR_CAPACITY = 8;
-constexpr int NUM_ELEVATORS = 4;
+// ---------- Simulation constants ----------
+constexpr int MAX_FLOOR = 100;          // building height
+constexpr int ELEVATOR_CAPACITY = 8;    // max passengers per elevator
+constexpr int NUM_ELEVATORS = 4;        // total elevators
 
+// ---------- Elevator movement states ----------
 enum ElevatorState {
-    STOPPED,
-    STOPPING,
+    STOPPED,    // idle or waiting at a floor
+    STOPPING,   // transitioning to STOPPED (2 seconds)
     MOVING_UP,
     MOVING_DOWN
 };
 
+// ---------- Passenger definition ----------
 struct Passenger {
     int id;
     int startTime;
@@ -35,6 +38,7 @@ struct Passenger {
     Passenger(int i, int sTime, int sFloor, int eFloor);
 };
 
+// ---------- Floor definition ----------
 struct Floor {
     int number;
     std::queue<std::shared_ptr<Passenger>> waiting;
@@ -45,26 +49,29 @@ struct Floor {
     size_t waitingCount() const;
 };
 
+// ---------- Elevator definition ----------
 class Elevator {
 private:
     int id_;
     int currentFloor_;
     ElevatorState state_;
-    int moveTimer_;
-    int stopTimer_;
-    int moveTimePerFloor_;
+    int moveTimer_;             // countdown for moving between floors
+    int stopTimer_;             // countdown for stopping
+    int moveTimePerFloor_;      // movement time (10s or 5s)
     std::vector<std::shared_ptr<Passenger>> passengers_;
-    int targetFloor_;
+    int targetFloor_;           // next destination
 
 public:
     Elevator(int id, int moveTime);
 
+    // getters
     int id() const;
     int currentFloor() const;
     ElevatorState state() const;
     int passengerCount() const;
     bool isIdle() const;
 
+    // core actions
     void dischargePassengers(int time, std::vector<std::shared_ptr<Passenger>>& completed);
     void boardPassengers(int time, std::shared_ptr<Floor> floor);
     std::optional<int> findNearestWaitingFloor(const std::vector<std::shared_ptr<Floor>>& floors);
@@ -72,6 +79,7 @@ public:
               std::vector<std::shared_ptr<Passenger>>& completed);
 };
 
+// ---------- Simulation controller ----------
 class Simulation {
 private:
     std::vector<std::shared_ptr<Floor>> floors;
