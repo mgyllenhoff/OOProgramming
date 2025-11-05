@@ -24,8 +24,14 @@ enum ElevatorState {
     MOVING_DOWN
 };
 
-// ---------- Passenger definition ----------
-struct Passenger {
+// ============================================================================
+// CLASS: Passenger
+// Represents a single person traveling between floors
+// ============================================================================
+class Passenger {
+public:
+    Passenger(int i, int sTime, int sFloor, int eFloor);
+
     int id;
     int startTime;
     int startFloor;
@@ -33,53 +39,76 @@ struct Passenger {
     int boardedTime = -1;
     int exitTime = -1;
     bool completed = false;
-
-    Passenger(int i, int sTime, int sFloor, int eFloor);
 };
 
-// ---------- Floor definition ----------
-struct Floor {
-    int number;
-    std::queue<std::shared_ptr<Passenger>> waiting;
+// ============================================================================
+// CLASS: Floor
+// Represents a single building floor, holding waiting passengers
+// ============================================================================
+class Floor {
+public:
+    explicit Floor(int n);
 
-    Floor(int n);
     void addWaiting(std::shared_ptr<Passenger> p);
     std::vector<std::shared_ptr<Passenger>> getWaitingUpToCapacity(int capacity);
     size_t waitingCount() const;
+
+    int number;
+
+private:
+    std::queue<std::shared_ptr<Passenger>> waiting; // CHANGED - made private
+    friend class Elevator;  // CHANGED - Elevator can still access waiting queue
 };
 
-// ---------- Elevator definition ----------
+// ============================================================================
+// CLASS: Elevator
+// Represents an individual elevator operating in the simulation
+// ============================================================================
 class Elevator {
-private:
-    int id_;
-    int currentFloor_;
-    ElevatorState state_;
-    int moveTimer_;             // countdown for moving between floors
-    int stopTimer_;             // countdown for stopping
-    int moveTimePerFloor_;      // movement time (10s or 5s)
-    std::vector<std::shared_ptr<Passenger>> passengers_;
-    int targetFloor_;           // next destination
-
 public:
     Elevator(int id, int moveTime);
 
-    // getters
+    // Public getters
     int id() const;
     int currentFloor() const;
     ElevatorState state() const;
     int passengerCount() const;
     bool isIdle() const;
 
-    // core actions
+    // Called once per simulation tick (main external control point)
+    void tick(int currentTime,
+              std::vector<std::shared_ptr<Floor>>& floors,
+              std::vector<std::shared_ptr<Passenger>>& completed);
+
+private:
+    // Internal logic (hidden from outside users)
     void dischargePassengers(int time, std::vector<std::shared_ptr<Passenger>>& completed);
     void boardPassengers(int time, std::shared_ptr<Floor> floor);
     int findNearestWaitingFloor(const std::vector<std::shared_ptr<Floor>>& floors);
-    void tick(int currentTime, std::vector<std::shared_ptr<Floor>>& floors,
-              std::vector<std::shared_ptr<Passenger>>& completed);
+
+    // State data
+    int id_;
+    int currentFloor_;
+    ElevatorState state_;
+    int moveTimer_;
+    int stopTimer_;
+    int moveTimePerFloor_;
+    std::vector<std::shared_ptr<Passenger>> passengers_;
+    int targetFloor_;
 };
 
-// ---------- Simulation controller ----------
+// ============================================================================
+// CLASS: Simulation
+// Controls all elevators and manages time progression
+// ============================================================================
 class Simulation {
+public:
+    explicit Simulation(int moveTime);
+
+    void loadCSV(const std::string& path);
+    void releaseArrivalsAtTime(int currentTime);
+    std::pair<double, double> run(); // returns avgWait, avgTravel
+
 private:
     std::vector<std::shared_ptr<Floor>> floors;
     std::vector<Elevator> elevators;
@@ -87,13 +116,6 @@ private:
     std::multimap<int, std::shared_ptr<Passenger>> arrivalsByTime;
     int totalPassengers = 0;
     int completedCount = 0;
-
-public:
-    Simulation(int moveTime);
-
-    void loadCSV(const std::string& path);
-    void releaseArrivalsAtTime(int currentTime);
-    std::pair<double, double> run(); // returns avgWait, avgTravel
 };
 
 #endif
