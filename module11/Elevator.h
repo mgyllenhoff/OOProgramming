@@ -32,7 +32,7 @@ class Passenger {
 public:
     Passenger(int i, int sTime, int sFloor, int eFloor);
 
-    int id;
+    int passengerID;
     int startTime;
     int startFloor;
     int endFloor;
@@ -52,9 +52,9 @@ public:
     void addWaiting(std::shared_ptr<Passenger> p);
 
 private:
-    std::queue<std::shared_ptr<Passenger>> waiting;
-    int number_;
     friend class Elevator; 
+    int floorNumber;
+    std::queue<std::shared_ptr<Passenger>> waiting;
 };
 
 // ============================================================================
@@ -63,7 +63,7 @@ private:
 // ============================================================================
 class Elevator {
 public:
-    Elevator(int id, int moveTime);
+    Elevator(int passengerID, int moveTime);
 
     // Called once per simulation tick (main external control point)
     void tick(int currentTime,
@@ -72,19 +72,19 @@ public:
 
 private:
     // Internal logic (hidden from outside users)
-    void dischargePassengers(int time, std::vector<std::shared_ptr<Passenger>>& completed);
+    void exitPassengers(int time, std::vector<std::shared_ptr<Passenger>>& completed);
     void boardPassengers(int time, std::shared_ptr<Floor> floor);
     int findNearestWaitingFloor(const std::vector<std::shared_ptr<Floor>>& floors);
 
     // State data
-    int id_;
-    int currentFloor_;
-    ElevatorState state_;
-    int moveTimer_;
-    int stopTimer_;
-    int moveTimePerFloor_;
-    std::vector<std::shared_ptr<Passenger>> passengers_;
-    int targetFloor_;
+    int elevatorID;
+    int currentFloor;
+    ElevatorState state;
+    int moveTimer;
+    int stopTimer;
+    int moveTimePerFloor;
+    std::vector<std::shared_ptr<Passenger>> passengers;
+    int targetFloor;
 };
 
 // ============================================================================
