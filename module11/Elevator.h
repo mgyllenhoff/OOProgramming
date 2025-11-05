@@ -50,14 +50,11 @@ public:
     explicit Floor(int n);
 
     void addWaiting(std::shared_ptr<Passenger> p);
-    std::vector<std::shared_ptr<Passenger>> getWaitingUpToCapacity(int capacity);
-    size_t waitingCount() const;
-
-    int number;
 
 private:
-    std::queue<std::shared_ptr<Passenger>> waiting; // CHANGED - made private
-    friend class Elevator;  // CHANGED - Elevator can still access waiting queue
+    std::queue<std::shared_ptr<Passenger>> waiting;
+    int number_;
+    friend class Elevator; 
 };
 
 // ============================================================================
@@ -67,13 +64,6 @@ private:
 class Elevator {
 public:
     Elevator(int id, int moveTime);
-
-    // Public getters
-    int id() const;
-    int currentFloor() const;
-    ElevatorState state() const;
-    int passengerCount() const;
-    bool isIdle() const;
 
     // Called once per simulation tick (main external control point)
     void tick(int currentTime,

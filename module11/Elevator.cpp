@@ -21,26 +21,11 @@ Passenger::Passenger(int i, int sTime, int sFloor, int eFloor)
 // CLASS: Floor
 // Represents a single building floor, holding waiting passengers
 // ============================================================================
-Floor::Floor(int n) : number(n) {}
+Floor::Floor(int n) : number_(n) {}
 
 // Adds a passenger to the waiting queue for this floor
 void Floor::addWaiting(std::shared_ptr<Passenger> p) {
     waiting.push(p);
-}
-
-// Returns a vector of up to "capacity" waiting passengers to board an elevator
-std::vector<std::shared_ptr<Passenger>> Floor::getWaitingUpToCapacity(int capacity) {
-    std::vector<std::shared_ptr<Passenger>> boarding;
-    while (!waiting.empty() && (int)boarding.size() < capacity) {
-        boarding.push_back(waiting.front());
-        waiting.pop();
-    }
-    return boarding;
-}
-
-// Returns how many passengers are waiting at this floor
-size_t Floor::waitingCount() const {
-    return waiting.size();
 }
 
 // ============================================================================
@@ -55,13 +40,6 @@ Elevator::Elevator(int id, int moveTime)
       stopTimer_(0),
       moveTimePerFloor_(moveTime), // Movement speed (10s or 5s)
       targetFloor_(-1) {}          // No initial target
-
-// ------------- GETTERS -------------------
-int Elevator::id() const { return id_; }
-int Elevator::currentFloor() const { return currentFloor_; }
-ElevatorState Elevator::state() const { return state_; }
-int Elevator::passengerCount() const { return passengers_.size(); }
-bool Elevator::isIdle() const { return state_ == STOPPED && passengers_.empty(); }
 
 // ============================================================================
 // dischargePassengers()
@@ -114,10 +92,10 @@ int Elevator::findNearestWaitingFloor(const std::vector<std::shared_ptr<Floor>>&
     for (std::vector<std::shared_ptr<Floor>>::const_iterator it = floors.begin(); it != floors.end(); ++it) { 
         std::shared_ptr<Floor> f = *it;
         if (f && !f->waiting.empty()) {
-            int dist = std::abs(f->number - currentFloor_);
+            int dist = std::abs(f->number_ - currentFloor_);
             if (dist < minDist) {
                 minDist = dist;
-                nearest = f->number;
+                nearest = f->number_;
             }
         }
     }
