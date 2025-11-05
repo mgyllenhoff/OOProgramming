@@ -6,7 +6,6 @@
 #include <queue>
 #include <map>
 #include <memory>
-#include <optional>
 #include <algorithm>
 #include <numeric>
 #include <fstream>
@@ -74,7 +73,7 @@ public:
     // core actions
     void dischargePassengers(int time, std::vector<std::shared_ptr<Passenger>>& completed);
     void boardPassengers(int time, std::shared_ptr<Floor> floor);
-    std::optional<int> findNearestWaitingFloor(const std::vector<std::shared_ptr<Floor>>& floors);
+    int findNearestWaitingFloor(const std::vector<std::shared_ptr<Floor>>& floors);
     void tick(int currentTime, std::vector<std::shared_ptr<Floor>>& floors,
               std::vector<std::shared_ptr<Passenger>>& completed);
 };
