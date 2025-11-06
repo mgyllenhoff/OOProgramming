@@ -1,4 +1,7 @@
 #include "Elevator.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 // Helper function for loadCSV() to trimp whitespace from both ends of a string
 static inline void trimInPlace(std::string& s) {

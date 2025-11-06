@@ -1,15 +1,7 @@
-#ifndef ELEVATOR_H
-#define ELEVATOR_H
+#pragma once
 
-#include <iostream>
-#include <vector>
-#include <queue>
 #include <map>
-#include <memory>
-#include <algorithm>
-#include <numeric>
-#include <fstream>
-#include <sstream>
+#include <queue>
 
 // ---------- Simulation constants ----------
 constexpr int MAX_FLOOR = 100;          // building height
@@ -107,5 +99,3 @@ private:
     int totalPassengers = 0;
     int completedCount = 0;
 };
-
-#endif
