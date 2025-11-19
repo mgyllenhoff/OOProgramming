@@ -1,6 +1,7 @@
 #include "PokerHand.h"
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -11,52 +12,58 @@ PokerHand::PokerHand(const string &handStr) {
 }
 
 // Turns the face cards to integers
-int PokerHand::rankCharToInt(char c) {
+Rank PokerHand::rankCharToRank(char c) {
   if (c >= '2' && c <= '9') {
-    return c - '0';
+    return static_cast<Rank>(c - '0');
   }
 
   switch (c) {
     case 'T':
-      return 10;
-      break;
+      return Rank::Ten;
     case 'J':
-      return 11;
-      break;
+      return Rank::Jack;
     case 'Q':
-      return 12;
-      break;
+      return Rank::Queen;
     case 'K':
-      return 13;
-      break;
+      return Rank::King;
     case 'A':
-      return 14;
-      break;
-    default:
-      return -1;
+      return Rank::Ace;
+    default: 
+      throw runtime_error("Rank is not valid.");
   }
 }
 
 // Parses the hand into an array to make it easier to read by the computer
 void PokerHand::parseHand(const std::string &handStr) {
   std::stringstream ss(handStr);
-  std::string card;
+  std::string cardStr;
   size_t idx = 0;
 
   // Turn each rank into a number to store in the cards array
-  while (ss >> card && idx < cards.size()) {
-    int val = rankCharToInt(card[0]);
-    if (val == -1) {
-      throw std::runtime_error("Rank is not valid.");
-    }
+  while (ss >> cardStr && idx < cards.size()) {
+    Rank r = rankCharToRank(cardStr[0]);
 
-    char suit = card[1];
-    if (suit != 'C' && suit != 'D' && suit != 'H' && suit != 'S') {
-      throw std::runtime_error("Suit is not valid.");
+    char suitChar = cardStr[1];
+    Suit s;
+    switch (suitChar) {
+      case 'C': 
+        s = Suit::C; 
+        break;
+      case 'D': 
+        s = Suit::D; 
+        break;
+      case 'H': 
+        s = Suit::H; 
+        break;
+      case 'S': 
+        s = Suit::S; 
+        break;
+      default: 
+        throw runtime_error("Suit is not valid.");
     }
 
     // Add value and suit to a 2D array representation of the hand
-    cards[idx++] = {val, suit};
+    cards[idx++] = Card(r, s);
   }
 
   if (idx != cards.size())
@@ -66,13 +73,11 @@ void PokerHand::parseHand(const std::string &handStr) {
   std::sort(cards.begin(), cards.end());
 }
 
-// Counts how many of each rank are in a hand
-static unordered_map<int, int> countRanks(
-    const std::array<std::pair<int, char>, 5> &cards) {
-  unordered_map<int, int> countsMap;
-
-  for (const std::pair<int, char> &c : cards) {
-    countsMap[c.first]++;
+// Helper to count rank frequencies
+static unordered_map<Rank, int> countRanks(const std::array<Card,5> &cards) {
+  unordered_map<Rank, int> countsMap;
+  for (const Card &c : cards) {
+    countsMap[c.rank]++;
   }
 
   return countsMap;
@@ -80,56 +85,61 @@ static unordered_map<int, int> countRanks(
 
 // Checks if hand is a Flush
 bool PokerHand::checkFlush() {
-  char suit = cards[0].second;
+  Suit s = cards[0].suit;
 
-  for (std::pair<int, char> &c : cards) {
-    if (c.second != suit) {
+  for (const Card &c : cards) {
+    if (c.suit != s) {
       return false;
     }
   }
 
-  highestRankNumber = cards.back().first;
+  highestRankNumber = cards.back().rank;
   return true;
 }
 
 // Checks if hand is a Straight
 bool PokerHand::checkStraight() {
+  int r0 = static_cast<int>(cards[0].rank);
+  int r4 = static_cast<int>(cards[4].rank);
+
   // handle wheel (straight with 5, 4, 3, 2, A)
   bool wheel =
-      (cards[4].first == 14 && cards[0].first == 2 && cards[1].first == 3 &&
-       cards[2].first == 4 && cards[3].first == 5);
+    (cards[4].rank == Rank::Ace &&
+      cards[0].rank == Rank::Two &&
+      cards[1].rank == Rank::Three &&
+      cards[2].rank == Rank::Four &&
+      cards[3].rank == Rank::Five);
 
   if (wheel) {
-    highestRankNumber = 5;
+    highestRankNumber = Rank::Five;
     return true;
   }
 
   for (int i = 0; i < 4; i++) {
-    if (!wheel && cards[i + 1].first - cards[i].first != 1) {
+    int r1 = static_cast<int>(cards[i].rank);
+    int r2 = static_cast<int>(cards[i + 1].rank);
+
+    if (r2 - r1 != 1) {
       return false;
     }
   }
 
-  highestRankNumber = cards.back().first;
+  highestRankNumber = cards.back().rank;
   return true;
 }
 
 // Checks if hand is a Straight Flush
 bool PokerHand::checkStraightFlush() {
-  if (checkFlush() && checkStraight()) {
-    return true;
-  } else {
-    return false;
-  }
+  return checkFlush() && checkStraight();
 }
 
 // Checks if hand is a Four of a Kind
 bool PokerHand::checkFourOfAKind() {
-  unordered_map<int, int> counts = countRanks(cards);
+  unordered_map<Rank, int> counts = countRanks(cards);
 
-  for (const std::pair<int, int> &count : counts) {
-    if (count.second == 4) {
-      highestRankNumber = count.first;
+  for (auto &p : counts) {
+    if (p.second == 4) {
+      highestRankNumber = p.first;
       return true;
     }
   }
@@ -139,22 +149,20 @@ bool PokerHand::checkFourOfAKind() {
 
 // Checks if hand is a Full House
 bool PokerHand::checkFullHouse() {
-  unordered_map<int, int> counts = countRanks(cards);
+  unordered_map<Rank, int> counts = countRanks(cards);
+  bool twos = false, threes = false;
+  Rank threeRank = Rank::Two;
 
-  bool twosSuits = false;
-  bool threeSuits = false;
-  int threeRank = 0;
-
-  for (const std::pair<int, int> &count : counts) {
-    if (count.second == 3) {
-      threeSuits = true;
-      threeRank = count.first;
-    } else if (count.second == 2) {
-      twosSuits = true;
+  for (auto &p : counts) {
+    if (p.second == 3) {
+      threes = true;
+      threeRank = p.first;
+    } else if (p.second == 2) {
+      twos = true;
     }
   }
 
-  if (threeSuits && twosSuits) {
+  if (threes && twos) {
     highestRankNumber = threeRank;
     return true;
   }
@@ -164,11 +172,11 @@ bool PokerHand::checkFullHouse() {
 
 // Checks if hand is a Three of a Kind
 bool PokerHand::checkThreeOfAKind() {
-  unordered_map<int, int> counts = countRanks(cards);
+  unordered_map<Rank, int> counts = countRanks(cards);
 
-  for (const std::pair<int, int> &count : counts) {
-    if (count.second == 3) {
-      highestRankNumber = count.first;
+  for (auto &p : counts) {
+    if (p.second == 3) {
+      highestRankNumber = p.first;
       return true;
     }
   }
@@ -178,18 +186,16 @@ bool PokerHand::checkThreeOfAKind() {
 
 // Checks if hand is a Two Pair
 bool PokerHand::checkTwoPair() {
-  unordered_map<int, int> counts = countRanks(cards);
+  unordered_map<Rank, int> counts = countRanks(cards);
+  vector<Rank> pairs;
 
-  vector<int> pairs;
-
-  for (const std::pair<int, int> &count : counts) {
-    if (count.second == 2) {
-      pairs.push_back(count.first);
-    }
+  for (auto &p : counts) {
+      if (p.second == 2)
+          pairs.push_back(p.first);
   }
 
   if (pairs.size() == 2) {
-    highestRankNumber = max(pairs[0], pairs[1]);
+    highestRankNumber = (static_cast<int>(pairs[0]) > static_cast<int>(pairs[1])) ? pairs[0] : pairs[1];
     return true;
   }
 
@@ -197,16 +203,13 @@ bool PokerHand::checkTwoPair() {
 }
 
 // Checks if hand is a One Pair
-bool PokerHand::checkOnePair() {
-  unordered_map<int, int> counts = countRanks(cards);
-
-  for (const std::pair<int, int> &count : counts) {
-    if (count.second == 2) {
-      highestRankNumber = count.first;
+bool PokerHand::checkOnePair() {unordered_map<Rank, int> counts = countRanks(cards);
+  for (auto &p : counts) {
+    if (p.second == 2) {
+      highestRankNumber = p.first;
       return true;
     }
   }
-
   return false;
 }
 
@@ -214,33 +217,32 @@ bool PokerHand::checkOnePair() {
 // 8 is the strongest and 0 is weakest hand
 void PokerHand::determineRank() {
   if (checkStraightFlush()) {
-    rankValue = 8;
+    rankValue = HandType::StraightFlush;
     cout << "Straight Flush" << endl;
   } else if (checkFourOfAKind()) {
-    rankValue = 7;
+    rankValue = HandType::FourOfAKind;
     cout << "Four of a Kind" << endl;
   } else if (checkFullHouse()) {
-    rankValue = 6;
+    rankValue = HandType::FullHouse;
     cout << "Full House" << endl;
   } else if (checkFlush()) {
-    rankValue = 5;
+    rankValue = HandType::Flush;
     cout << "Flush" << endl;
   } else if (checkStraight()) {
-    rankValue = 4;
+    rankValue = HandType::Straight;
     cout << "Straight" << endl;
   } else if (checkThreeOfAKind()) {
-    rankValue = 3;
+    rankValue = HandType::ThreeOfAKind;
     cout << "Three of a Kind" << endl;
   } else if (checkTwoPair()) {
-    rankValue = 2;
+    rankValue = HandType::TwoPair;
     cout << "Two Pair" << endl;
   } else if (checkOnePair()) {
-    rankValue = 1;
+    rankValue = HandType::OnePair;
     cout << "One Pair" << endl;
   } else {
-    // High card
-    rankValue = 0;
-    highestRankNumber = cards.back().first;
+    rankValue = HandType::HighCard;
+    highestRankNumber = cards.back().rank;
     cout << "High Card" << endl;
   }
 }
@@ -249,14 +251,15 @@ void PokerHand::determineRank() {
 // If ranks are the same, compares the highest ranking number
 void PokerHand::compare(const PokerHand &firstHand,
                         const PokerHand &secondHand) {
-  if (firstHand.rankValue > secondHand.rankValue) {
+  if (static_cast<int>(firstHand.rankValue) > static_cast<int>(secondHand.rankValue)) {
     cout << "First Hand Wins!" << endl;
-  } else if (firstHand.rankValue < secondHand.rankValue) {
+  }
+  else if (static_cast<int>(firstHand.rankValue) < static_cast<int>(secondHand.rankValue)) {
     cout << "Second Hand Wins!" << endl;
   } else {
-    if (firstHand.highestRankNumber > secondHand.highestRankNumber) {
+    if (static_cast<int>(firstHand.highestRankNumber) > static_cast<int>(secondHand.highestRankNumber)) {
       cout << "First Hand Wins!" << endl;
-    } else if (firstHand.highestRankNumber < secondHand.highestRankNumber) {
+    } else if (static_cast<int>(firstHand.highestRankNumber) < static_cast<int>(secondHand.highestRankNumber)) {
       cout << "Second Hand Wins!" << endl;
     } else {
       cout << "It's a Tie!" << endl;

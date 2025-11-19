@@ -1,4 +1,54 @@
+#pragma once
+#include <array>
+#include <string>
 #include <vector>
+#include <unordered_map>
+
+enum class Suit { C, D, H, S };
+
+enum class Rank {
+  Two   = 2,
+  Three = 3,
+  Four  = 4,
+  Five  = 5,
+  Six   = 6,
+  Seven = 7,
+  Eight = 8,
+  Nine  = 9,
+  Ten   = 10,
+  Jack  = 11,
+  Queen = 12,
+  King  = 13,
+  Ace   = 14
+};
+
+
+// Hand ranking categories
+enum class HandType {
+  HighCard = 0,
+  OnePair,
+  TwoPair,
+  ThreeOfAKind,
+  Straight,
+  Flush,
+  FullHouse,
+  FourOfAKind,
+  StraightFlush
+};
+
+class Card {
+ public:
+  Rank rank;
+  Suit suit;
+
+  Card() = default;
+  Card(Rank r, Suit s) : rank(r), suit(s) {}
+
+  // Needed for sorting cards by rank
+  bool operator<(const Card &other) const {
+    return static_cast<int>(rank) < static_cast<int>(other.rank);
+  }
+};
 
 class PokerHand {
  public:
@@ -7,11 +57,13 @@ class PokerHand {
   static void compare(const PokerHand &firstHand, const PokerHand &secondHand);
 
  private:
-  std::array<std::pair<int, char>, 5> cards;
-  int rankValue;
-  int highestRankNumber;
+  std::array<Card, 5> cards;
+  HandType rankValue;
+  Rank highestRankNumber;
 
-  static int rankCharToInt(char c);
+  // Turns the face cards to integers
+  static Rank rankCharToRank(char c);
+
   void parseHand(const std::string &handStr);
 
   // All of the checks used to determine rank
