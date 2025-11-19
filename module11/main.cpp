@@ -10,7 +10,8 @@ int main() {
         const std::string csvPath = "Mod10_Assignment_Elevators.csv";
 
         // FILE-ONLY LOGGER
-        auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("simulation.log", true);
+        auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("simulation.log", 
+            true);
         auto logger = std::make_shared<spdlog::logger>("file_logger", file_sink);
         spdlog::set_default_logger(logger);
         spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%l] %v"); 

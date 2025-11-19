@@ -8,8 +8,12 @@
 
 // Helper function for loadCSV() to trimp whitespace from both ends of a string
 static inline void trimInPlace(std::string& s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch){ return !std::isspace(ch); }));
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch){ return !std::isspace(ch); }).base(), s.end());
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch){ 
+        return !std::isspace(ch); 
+    }));
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch){ 
+        return !std::isspace(ch); 
+    }).base(), s.end());
 }
 
 /*
@@ -55,7 +59,8 @@ void Elevator::exitPassengers(int time, std::vector<std::shared_ptr<Passenger>>&
             (*it)->exitTime = time; // Record when the passenger exits
             (*it)->completed = true; // Mark complete
             completed.push_back(*it);
-            spdlog::info("[t={}] Elevator {}: Passenger {} exited at floor {}", time, elevatorID, (*it)->passengerID, currentFloor);
+            spdlog::info("[t={}] Elevator {}: Passenger {} exited at floor {}", 
+                time, elevatorID, (*it)->passengerID, currentFloor);
             it = passengers.erase(it); // Remove passenger from elevator list
         } 
         else {
@@ -71,7 +76,8 @@ void Elevator::boardPassengers(int time, std::shared_ptr<Floor> floor) {
         floor->waiting.pop(); // Remove passenger from queue
         p->boardedTime = time; // Record when passenger boards
         passengers.push_back(p); // Add passenger to elevator
-        spdlog::info("[t={}] Elevator {}: Passenger {} boarded at floor {}", time, elevatorID, p->passengerID, p->startFloor);
+        spdlog::info("[t={}] Elevator {}: Passenger {} boarded at floor {}", 
+            time, elevatorID, p->passengerID, p->startFloor);
     }
 }
 
@@ -81,7 +87,8 @@ int Elevator::findNearestWaitingFloor(const std::vector<std::shared_ptr<Floor>>&
     int minDist = MAX_FLOOR + 1;
 
     // Check all floors for waiting passengers
-    for (std::vector<std::shared_ptr<Floor>>::const_iterator it = floors.begin(); it != floors.end(); ++it) { 
+    for (std::vector<std::shared_ptr<Floor>>::const_iterator it = floors.begin(); 
+        it != floors.end(); ++it) { 
         std::shared_ptr<Floor> f = *it;
         if (f && !f->waiting.empty()) {
             int dist = std::abs(f->floorNumber - currentFloor);
@@ -121,12 +128,14 @@ void Elevator::tick(int currentTime,
             moveTimer = moveTimePerFloor; // Reset timer for next movement between floors
             if (currentFloor < MAX_FLOOR) {
                 currentFloor++;
-                spdlog::debug("[t={}] Elevator {} reached floor {}", currentTime, elevatorID, currentFloor);
+                spdlog::debug("[t={}] Elevator {} reached floor {}", 
+                    currentTime, elevatorID, currentFloor);
             }
 
             // Check if elevator should stop here (to pick up or drop off)
             bool stopHere = false;
-            for (std::vector<std::shared_ptr<Passenger>>::iterator pit = passengers.begin(); pit != passengers.end(); ++pit) {
+            for (std::vector<std::shared_ptr<Passenger>>::iterator pit = passengers.begin(); 
+                pit != passengers.end(); ++pit) {
                 if ((*pit)->endFloor == currentFloor) stopHere = true;
             }
             if (!floors[currentFloor]->waiting.empty()) {
@@ -155,12 +164,14 @@ void Elevator::tick(int currentTime,
             moveTimer = moveTimePerFloor; // Reset timer for next movement between floors
             if (currentFloor > 1) {
                 currentFloor--;
-                spdlog::debug("[t={}] Elevator {} reached floor {}", currentTime, elevatorID, currentFloor); 
+                spdlog::debug("[t={}] Elevator {} reached floor {}", 
+                    currentTime, elevatorID, currentFloor); 
             }
 
             // Check if elevator should stop here (to pick up or drop off)
             bool stopHere = false;
-            for (std::vector<std::shared_ptr<Passenger>>::iterator pit = passengers.begin(); pit != passengers.end(); ++pit) {
+            for (std::vector<std::shared_ptr<Passenger>>::iterator pit = passengers.begin(); 
+                pit != passengers.end(); ++pit) {
                 if ((*pit)->endFloor == currentFloor) stopHere = true;
             }
             if (!floors[currentFloor]->waiting.empty()) {
@@ -193,7 +204,8 @@ void Elevator::tick(int currentTime,
             targetFloor = passengers.front()->endFloor;
             state = (targetFloor > currentFloor) ? MOVING_UP : MOVING_DOWN;
             moveTimer = moveTimePerFloor;
-            spdlog::debug("[t={}] Elevator {} departing floor {} toward {} ({} passengers)", currentTime, elevatorID, currentFloor, targetFloor, passengers.size()); 
+            spdlog::debug("[t={}] Elevator {} departing floor {} toward {} ({} passengers)", 
+                currentTime, elevatorID, currentFloor, targetFloor, passengers.size()); 
         } 
         // If no passengers, search for the nearest waiting passenger
         else {
@@ -259,12 +271,16 @@ void Simulation::loadCSV(const std::string& path) {
         int endFloor = std::stoi(c);
 
         // Ignore invalid data
-        if (startFloor < 1 || startFloor > MAX_FLOOR || endFloor < 1 || endFloor > MAX_FLOOR) {
+        if (startFloor < 1 || 
+            startFloor > MAX_FLOOR || 
+            endFloor < 1 || 
+            endFloor > MAX_FLOOR) {
             continue; 
         }
 
         // Create passenger and store it globally
-        std::shared_ptr<Passenger> p = std::make_shared<Passenger>(++passengerID, startTime, startFloor, endFloor);
+        std::shared_ptr<Passenger> p = 
+            std::make_shared<Passenger>(++passengerID, startTime, startFloor, endFloor);
         allPassengers.push_back(p);
         arrivalsByTime.emplace(startTime, p);
     }
@@ -276,11 +292,15 @@ void Simulation::loadCSV(const std::string& path) {
 // Releases passengers whose startTime equals the current simulation time
 // Adds them to their starting floor's waiting queue
 void Simulation::releaseArrivalsAtTime(int currentTime) {
-    std::pair<std::multimap<int, std::shared_ptr<Passenger>>::iterator, std::multimap<int, std::shared_ptr<Passenger>>::iterator> range = arrivalsByTime.equal_range(currentTime);
-    for (std::multimap<int, std::shared_ptr<Passenger>>::iterator it = range.first; it != range.second; ++it) { 
+    std::pair<std::multimap<int, std::shared_ptr<Passenger>>::iterator, 
+        std::multimap<int, std::shared_ptr<Passenger>>::iterator> range = 
+        arrivalsByTime.equal_range(currentTime);
+    for (std::multimap<int, std::shared_ptr<Passenger>>::iterator it = range.first; 
+        it != range.second; ++it) { 
         std::shared_ptr<Passenger> p = it->second; 
         floors[p->startFloor]->addWaiting(p);
-        spdlog::info("[t={}] Passenger {} arrived on floor {} going to {}", currentTime, p->passengerID, p->startFloor, p->endFloor); 
+        spdlog::info("[t={}] Passenger {} arrived on floor {} going to {}", 
+            currentTime, p->passengerID, p->startFloor, p->endFloor); 
     }
     arrivalsByTime.erase(range.first, range.second);
 }
@@ -317,7 +337,8 @@ std::pair<double, double> Simulation::run() {
             idleTicks++;
         }
         if (idleTicks > IDLE_LIMIT) {
-            spdlog::error("Simulation stalled at t={} completed={}/{}", currentTime, completedCount, totalPassengers); 
+            spdlog::error("Simulation stalled at t={} completed={}/{}", 
+                currentTime, completedCount, totalPassengers); 
             break;
         }
 
@@ -328,7 +349,8 @@ std::pair<double, double> Simulation::run() {
     // Compute results (average wait and travel times of passengers)
     double totalWait = 0, totalTravel = 0;
     int count = 0;
-    for (std::vector<std::shared_ptr<Passenger>>::iterator pit = allPassengers.begin(); pit != allPassengers.end(); ++pit) {
+    for (std::vector<std::shared_ptr<Passenger>>::iterator pit = allPassengers.begin(); 
+        pit != allPassengers.end(); ++pit) {
         std::shared_ptr<Passenger> p = *pit;
         if (p->boardedTime >= 0 && p->exitTime >= 0) {
             totalWait += p->boardedTime - p->startTime;

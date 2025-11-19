@@ -3,12 +3,12 @@
 #include <map>
 #include <queue>
 
-// ---------- Simulation constants ----------
+// Simulation constants
 constexpr int MAX_FLOOR = 100;          // building height
 constexpr int ELEVATOR_CAPACITY = 8;    // max passengers per elevator
 constexpr int NUM_ELEVATORS = 4;        // total elevators
 
-// ---------- Elevator movement states ----------
+// Elevator movement states
 enum ElevatorState {
     STOPPED,    // idle or waiting at a floor
     STOPPING,   // transitioning to STOPPED (2 seconds)
@@ -16,10 +16,7 @@ enum ElevatorState {
     MOVING_DOWN
 };
 
-// ============================================================================
-// CLASS: Passenger
-// Represents a single person traveling between floors
-// ============================================================================
+// Passenger class: Represents a single person traveling between floors
 class Passenger {
 public:
     Passenger(int i, int sTime, int sFloor, int eFloor);
@@ -33,10 +30,7 @@ public:
     bool completed = false;
 };
 
-// ============================================================================
-// CLASS: Floor
-// Represents a single building floor, holding waiting passengers
-// ============================================================================
+// Floor class: Represents a single building floor, holding waiting passengers
 class Floor {
 public:
     explicit Floor(int n);
@@ -49,10 +43,7 @@ private:
     std::queue<std::shared_ptr<Passenger>> waiting;
 };
 
-// ============================================================================
-// CLASS: Elevator
-// Represents an individual elevator operating in the simulation
-// ============================================================================
+// Elevator class: Represents an individual elevator operating in the simulation
 class Elevator {
 public:
     Elevator(int passengerID, int moveTime);
@@ -79,10 +70,7 @@ private:
     int targetFloor;
 };
 
-// ============================================================================
-// CLASS: Simulation
-// Controls all elevators and manages time progression
-// ============================================================================
+// Simulation class: Controls all elevators and manages time progression
 class Simulation {
 public:
     explicit Simulation(int moveTime);
