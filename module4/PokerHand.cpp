@@ -83,6 +83,17 @@ static unordered_map<Rank, int> countRanks(const std::array<Card,5> &cards) {
   return countsMap;
 }
 
+// Helper to returns cards sorted from highest to lowest for full tiebreak evaluation
+static std::vector<int> extractRankVector(const std::array<Card,5> &cards) {
+  std::vector<int> ranks;
+  for (const Card &c : cards) {
+    ranks.push_back(static_cast<int>(c.rank));
+  }
+  std::sort(ranks.begin(), ranks.end(), std::greater<int>());
+  return ranks;
+}
+
+
 // Checks if hand is a Flush
 bool PokerHand::checkFlush() {
   Suit s = cards[0].suit;
@@ -248,21 +259,44 @@ void PokerHand::determineRank() {
 }
 
 // Determines a winner by first comparing the rank of two hands
-// If ranks are the same, compares the highest ranking number
+// If ranks are the same, compares highest ranking number, then kickers
 void PokerHand::compare(const PokerHand &firstHand,
                         const PokerHand &secondHand) {
+  // First compare hand category (e.g., Straight vs Two Pair)
   if (static_cast<int>(firstHand.rankValue) > static_cast<int>(secondHand.rankValue)) {
     cout << "First Hand Wins!" << endl;
+    return;
   }
   else if (static_cast<int>(firstHand.rankValue) < static_cast<int>(secondHand.rankValue)) {
     cout << "Second Hand Wins!" << endl;
-  } else {
-    if (static_cast<int>(firstHand.highestRankNumber) > static_cast<int>(secondHand.highestRankNumber)) {
+    return;
+  }
+
+  // If category is the same, compare highestRankNumber first
+  if (static_cast<int>(firstHand.highestRankNumber) > static_cast<int>(secondHand.highestRankNumber)) {
+    cout << "First Hand Wins!" << endl;
+    return;
+  }
+  else if (static_cast<int>(firstHand.highestRankNumber) < static_cast<int>(secondHand.highestRankNumber)) {
+    cout << "Second Hand Wins!" << endl;
+    return;
+  }
+
+  // If still tied, compare all card ranks (kickers)
+  vector<int> firstRanks  = extractRankVector(firstHand.cards);
+  vector<int> secondRanks = extractRankVector(secondHand.cards);
+
+  for (int i = 0; i < 5; i++) {
+    if (firstRanks[i] > secondRanks[i]) {
       cout << "First Hand Wins!" << endl;
-    } else if (static_cast<int>(firstHand.highestRankNumber) < static_cast<int>(secondHand.highestRankNumber)) {
+      return;
+    }
+    else if (firstRanks[i] < secondRanks[i]) {
       cout << "Second Hand Wins!" << endl;
-    } else {
-      cout << "It's a Tie!" << endl;
+      return;
     }
   }
+
+  // If literally every card matches
+  cout << "It's a Tie!" << endl;
 }
