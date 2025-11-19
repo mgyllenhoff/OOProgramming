@@ -139,6 +139,16 @@ bool PokerHand::checkStraight() {
   return true;
 }
 
+// Checks if hand is a Royal Flush
+bool PokerHand::checkRoyalFlush() {
+    // Must be a straight flush and highest card must be Ace
+    if (checkStraightFlush() && cards.back().rank == Rank::Ace) {
+      highestRankNumber = Rank::Ace;
+      return true;
+    }
+    return false;
+}
+
 // Checks if hand is a Straight Flush
 bool PokerHand::checkStraightFlush() {
   return checkFlush() && checkStraight();
@@ -227,7 +237,10 @@ bool PokerHand::checkOnePair() {unordered_map<Rank, int> counts = countRanks(car
 // Uses all of the hand checks to rank the cards
 // 8 is the strongest and 0 is weakest hand
 void PokerHand::determineRank() {
-  if (checkStraightFlush()) {
+  if (checkRoyalFlush()) {
+    rankValue = HandType::RoyalFlush;
+    cout << "Royal Flush" << endl;
+  } else if (checkStraightFlush()) {
     rankValue = HandType::StraightFlush;
     cout << "Straight Flush" << endl;
   } else if (checkFourOfAKind()) {

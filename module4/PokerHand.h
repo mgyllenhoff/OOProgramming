@@ -33,7 +33,8 @@ enum class HandType {
   Flush,
   FullHouse,
   FourOfAKind,
-  StraightFlush
+  StraightFlush,
+  RoyalFlush
 };
 
 class Card {
@@ -67,6 +68,7 @@ class PokerHand {
   void parseHand(const std::string &handStr);
 
   // All of the checks used to determine rank
+  bool checkRoyalFlush();
   bool checkStraightFlush();
   bool checkFourOfAKind();
   bool checkFullHouse();

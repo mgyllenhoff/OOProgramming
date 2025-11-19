@@ -3,10 +3,11 @@
 
 // Main function used for testing
 int main() {
-  // // Royal Flush
-  // PokerHand royalFlush1("AS KS QS JS TS");
-  // PokerHand straightFlush0("8H 7H 6H 5H 4H");
-  // PokerHand::compare(royalFlush1, straightFlush0);
+  // Royal Flush
+  PokerHand royalFlush1("AS KS QS JS TS");
+  PokerHand straightFlush0("8H 7H 6H 5H 4H");
+  PokerHand::compare(royalFlush1, straightFlush0);
+  std::cout << std::endl;
 
   // Straight Flush
   PokerHand straightFlush1("TC 9C 8C 7C 6C");
