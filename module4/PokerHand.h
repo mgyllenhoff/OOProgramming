@@ -57,6 +57,10 @@ class PokerHand {
   void determineRank();
   static void compare(const PokerHand &firstHand, const PokerHand &secondHand);
 
+  HandType getRankValue() const { return rankValue; }
+  Rank getHighestRankNumber() const { return highestRankNumber; }
+  const std::array<Card,5>& getCards() const { return cards; }
+
  private:
   std::array<Card, 5> cards;
   HandType rankValue;
