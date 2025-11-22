@@ -14,37 +14,42 @@ class Player {
         std::string name;
         bool isHuman;
         int chips;
-        std::vector<StandardCard> hand;
 
         Player(std::string name, bool isHuman);
 
         void clearHand();
         void addCard(StandardCard c);
         std::string handToString() const;
+
+    private:
+        std::vector<StandardCard> hand;
+
+        friend class PokerGame; // allows PokerGame to access the hand when building PokerHand
 };
 
 class Deck {
     public:
-        std::vector<StandardCard> cards;
-
         Deck();
         void reset();
         void shuffle();
         StandardCard deal();
+
+    private:
+        std::vector<StandardCard> cards;
 };
 
 class PokerGame {
     public:
+        void setup();
+        void playRound();
+
+    private:
         std::vector<Player> players;
         Deck deck;
         int pot = 0;
 
-        void setup();
         void dealHands();
         void bettingRound();
         void declareWinner();
-        void playRound();
-
-    private:
         int compareHandsReturn(const PokerHand &h1, const PokerHand &h2);
 };

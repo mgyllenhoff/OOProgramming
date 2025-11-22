@@ -5,7 +5,7 @@
 
 using namespace std;
 
-// Constructor for player
+// Constructor for player (whether human or computer)
 Player::Player(string name, bool isHuman)
     : name(name), isHuman(isHuman), chips(100) {}
 
@@ -49,10 +49,14 @@ string Player::handToString() const {
 // Deck Implementation
 // =============================================================
 
-Deck::Deck() { reset(); }
+Deck::Deck() {
+    reset();
+}
 
 void Deck::reset() {
     cards.clear();
+    cards.reserve(52);
+
     for (int s = 0; s < 4; s++) {
         for (int r = 2; r <= 14; r++) {
             cards.push_back(StandardCard{
@@ -70,7 +74,7 @@ void Deck::shuffle() {
     for (int i = cards.size() - 1; i > 0; i--) {
         uniform_int_distribution<int> dist(0, i);
         int j = dist(rng);
-        std::swap(cards[i], cards[j]);
+        swap(cards[i], cards[j]);
     }
 }
 
@@ -93,13 +97,13 @@ void PokerGame::setup() {
 
     for (int i = 0; i < numPlayers; i++) {
         char type;
-        cout << "Is player " << (i+1) << " human? (y/n): ";
+        cout << "Is player " << (i + 1) << " human? (y/n): ";
         cin >> type;
 
         if (type == 'y' || type == 'Y')
-            players.emplace_back("Human" + to_string(i+1), true);
+            players.emplace_back("Human" + to_string(i + 1), true);
         else
-            players.emplace_back("Computer" + to_string(i+1), false);
+            players.emplace_back("Computer" + to_string(i + 1), false);
     }
 }
 
@@ -139,7 +143,7 @@ void PokerGame::bettingRound() {
             p.chips -= bet;
             pot += bet;
         } else {
-            // simple CPU heuristic
+            // simple computer heuristic
             int highRank = (int)p.hand.back().rank;
             int bet = (highRank > 11 ? 5 : 0);
 
@@ -155,7 +159,9 @@ void PokerGame::declareWinner() {
     cout << "\n--- Showdown ---\n";
 
     vector<PokerHand> hands;
-    for (auto &p : players)
+    hands.reserve(players.size());
+
+    for (Player &p : players)
         hands.emplace_back(p.handToString());
 
     int bestIndex = 0;
@@ -177,12 +183,15 @@ void PokerGame::declareWinner() {
 
 int PokerGame::compareHandsReturn(const PokerHand &h1, const PokerHand &h2) {
     // high-level category
-    if ((int)h1.getRankValue() > (int)h2.getRankValue()) return 1;
-    if ((int)h1.getRankValue() < (int)h2.getRankValue()) return 2;
+    if ((int)h1.getRankValue() > (int)h2.getRankValue()) 
+        return 1;
+    if ((int)h1.getRankValue() < (int)h2.getRankValue()) 
+        return 2;
 
-    // primary rank comparison
-    if ((int)h1.getHighestRankNumber() > (int)h2.getHighestRankNumber()) return 1;
-    if ((int)h1.getHighestRankNumber() < (int)h2.getHighestRankNumber()) return 2;
+    if ((int)h1.getHighestRankNumber() > (int)h2.getHighestRankNumber()) 
+        return 1;
+    if ((int)h1.getHighestRankNumber() < (int)h2.getHighestRankNumber()) 
+        return 2;
 
     // compare kickers
     vector<int> r1, r2;
