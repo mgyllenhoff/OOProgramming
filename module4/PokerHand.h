@@ -55,7 +55,6 @@ class PokerHand {
  public:
   explicit PokerHand(const std::string &handStr);
   void determineRank();
-  static void compare(const PokerHand &firstHand, const PokerHand &secondHand);
 
   HandType getRankValue() const { return rankValue; }
   Rank getHighestRankNumber() const { return highestRankNumber; }

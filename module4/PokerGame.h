@@ -42,6 +42,7 @@ class PokerGame {
     public:
         void setup();
         void playRound();
+        int compareHandsReturn(const PokerHand &h1, const PokerHand &h2);
 
     private:
         std::vector<Player> players;
@@ -51,5 +52,4 @@ class PokerGame {
         void dealHands();
         void bettingRound();
         void declareWinner();
-        int compareHandsReturn(const PokerHand &h1, const PokerHand &h2);
 };

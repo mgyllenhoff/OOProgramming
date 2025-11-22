@@ -7,7 +7,7 @@ using namespace std;
 
 // Constructor for player (whether human or computer)
 Player::Player(string name, bool isHuman)
-    : name(name), isHuman(isHuman), chips(100) {}
+    : name(name), isHuman(isHuman), chips(20) {}
 
 // Clears the players hand
 void Player::clearHand() {
@@ -148,6 +148,15 @@ void PokerGame::bettingRound() {
     // Resets the pot for this round
     pot = 0;
 
+    // Remove players who cannot afford the ante
+    players.erase(std::remove_if(players.begin(), players.end(), [](const Player &p){ return p.chips < 10; }), players.end());
+
+    // If there are not enough players, end the game
+    if (players.size() < 2) {
+        cout << "Not enough players remain to continue the game." << endl;
+        exit(0); 
+    }
+
     cout << "\n--- Ante Round (everyone antes 10 chips) ---\n";
     for (Player &p : players) {
         p.chips -= 10;
@@ -165,12 +174,31 @@ void PokerGame::bettingRound() {
             cout << "Enter additional bet (0 to check): ";
             cin >> bet;
 
+            // Ensure player can afford their bet
+            if (bet > p.chips) {
+                cout << "You don't have enough chips. Betting your remaining " << p.chips << " chips" << endl;
+                bet = p.chips;
+            } else if (bet < 0) {
+                cout << "Cannot bet negative chips. Checking instead" << endl;
+                bet = 0;
+            }
+
             p.chips -= bet;
             pot += bet;
         } else {
             // Computer bets 5 if its high card is better than Jack
             int highRank = (int)p.hand.back().rank;
-            int bet = (highRank > 11 ? 5 : 0);
+            int bet;
+
+            if (highRank > 11) {
+                if (bet <= p.chips) {
+                    bet = 5;
+                } else {
+                    bet = p.chips;
+                }
+            } else {
+                bet = 0;
+            }
 
             p.chips -= bet;
             pot += bet;
@@ -230,8 +258,13 @@ int PokerGame::compareHandsReturn(const PokerHand &h1, const PokerHand &h2) {
         r2.push_back((int)c.rank);
     }
 
-    sort(r1.begin(), r1.end(), greater<int>());
-    sort(r2.begin(), r2.end(), greater<int>());
+    if ((int)h1.getRankValue() != 2) {
+        sort(r1.begin(), r1.end(), greater<int>());
+        sort(r2.begin(), r2.end(), greater<int>());
+    } else {
+        sort(r1.begin(), r1.end() - 1, greater<int>());
+        sort(r2.begin(), r2.end() - 1, greater<int>());
+    }
 
     for (int i = 0; i < 5; i++) {
         if (r1[i] > r2[i]) {
