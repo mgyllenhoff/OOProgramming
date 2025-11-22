@@ -1,6 +1,6 @@
-#include <iostream>
 #include "PokerHand.h"
 #include "PokerGame.h"
+#include <iostream>
 
 // Helper function for testing
 void printHandResult(int result) {
