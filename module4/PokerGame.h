@@ -2,53 +2,47 @@
 #include "PokerHand.h"
 #include <vector>
 
-// Card structure for a standard deck
 struct StandardCard {
-    Rank rank;
-    Suit suit;
+  Rank rank;
+  Suit suit;
 };
 
 class Player {
-    public:
-        std::string name;
-        bool isHuman;
-        int chips;
+  public:
+    int chips;
+    std::string name;
+    bool isHuman;
+    std::vector<StandardCard> hand;
 
-        Player(std::string name, bool isHuman);
-
-        void clearHand();
-        void addCard(StandardCard c);
-        std::string handToString() const;
-
-    private:
-        std::vector<StandardCard> hand;
-
-        friend class PokerGame; // allows PokerGame to access the hand when building PokerHand
+    Player(std::string name, bool isHuman);
+    std::string handToString() const;
+    void addCard(StandardCard c);
+    void clearHand();
 };
 
 class Deck {
-    public:
-        Deck();
-        void reset();
-        void shuffle();
-        StandardCard deal();
+  public:
+    Deck();
+    void reset();
+    void shuffle();
+    StandardCard deal();
 
-    private:
-        std::vector<StandardCard> cards;
+  private:
+    std::vector<StandardCard> cards;
 };
 
 class PokerGame {
-    public:
-        void setup();
-        void playRound();
-        int compareHandsReturn(const PokerHand &h1, const PokerHand &h2);
+  public:
+    void setup();
+    void playRound();
+    int compareHandsReturn(const PokerHand &h1, const PokerHand &h2);
 
-    private:
-        std::vector<Player> players;
-        Deck deck;
-        int pot = 0;
+  private:
+    std::vector<Player> players;
+    Deck deck;
+    int pot = 0;
 
-        void dealHands();
-        void bettingRound();
-        void declareWinner();
+    void dealHands();
+    void bettingRound();
+    void declareWinner();
 };

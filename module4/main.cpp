@@ -141,7 +141,7 @@ int main() {
   printHandResult(game1.compareHandsReturn(highCard7, highCard8));
   std::cout << std::endl;
 
-  std::cout << "BEGIN GAME" << std::endl;
+  std::cout << "PLAY A GAME" << std::endl;
   PokerGame game2;
   game2.setup();
 
