@@ -5,8 +5,8 @@
 #include <vector>
 using namespace std;
 
-const int NUM_ROWS = 10;
-const int NUM_COLS = 10;
+const int NUM_ROWS = 9000;
+const int NUM_COLS = 9000;
 
 // Add two matrices returning the sum of all elements of the result
 void matrixAdd(double leftMatrix[NUM_ROWS][NUM_COLS],
@@ -26,22 +26,6 @@ void matrixAdd(double leftMatrix[NUM_ROWS][NUM_COLS],
     }
 } // end matrixAdd
 
-// Determines the seconds elapsed between two times
-double elapsedSec(const clock_t& startTime, const clock_t& endTime) {
-    return double(endTime - startTime) / CLOCKS_PER_SEC;
-} // end elapsedSec
-
-// Prints a matrix to see it's components
-void printMatrix(double matrix[NUM_ROWS][NUM_COLS]){
-    for (int i = 0; i < NUM_ROWS; i++) {
-        for (int j = 0; j < NUM_COLS; j++) {
-            cout << matrix[i][j] << "\t";
-        }
-        cout << "\n";
-    }
-    cout << "\n";
-} // end printMatrix
-
 // Main function for running programs
 int main(void) {
     static double A[NUM_ROWS][NUM_COLS];
@@ -57,31 +41,28 @@ int main(void) {
         }
     }
 
-    cout << "MATRIX A:" << endl;
-    printMatrix(A);
-
-    cout << "MATRIX B:" << endl;
-    printMatrix(B);
-
+    // UNTHREADED MATRIX ADDITION
     double unthreadedTotalSum = 0;
+    
+    auto startTime1 = chrono::high_resolution_clock::now();
 
-    // Add matrices normally
-    clock_t startTime1 = clock();
     matrixAdd(A, B, C1, 0, NUM_ROWS - 1, unthreadedTotalSum);
-    clock_t endTime1 = clock();
+    auto endTime1 = chrono::high_resolution_clock::now();
 
-    cout << "OUTPUT MATRIX:" << endl;
-    printMatrix(C1);
-    cout << "Adding matrices normally took " << elapsedSec(startTime1, endTime1) << "seconds" << endl;
+    auto time1 = chrono::duration<double, milli>(endTime1 - startTime1).count();
 
-    // Add matrices using threading
-    int numThreads = 4; // Manually choose # threads (safe for small matrices)
+    // THREADED MATRIX ADDITION
+    int numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0) {
+        numThreads = 4;
+    }
+
     vector<thread> threads; // Holds all the thread objects
     vector<double> threadSums(numThreads, 0); // To store partial sum of matrix additions for each thread
 
     int rowsPerThread = NUM_ROWS / numThreads; // Divides work among threads
 
-    clock_t startTime2 = clock();
+    auto startTime2 = chrono::high_resolution_clock::now();
 
     // Perform threading
     for (int t = 0; t < numThreads; t++) {
@@ -97,20 +78,20 @@ int main(void) {
         th.join();
     }
 
-    clock_t endTime2 = clock();
-
     // Combine sums
     double threadedTotalSum = 0;
     for (double s : threadSums) {
         threadedTotalSum += s;
     }
 
-    cout << "THREADED OUTPUT MATRIX:" << endl;
-    printMatrix(C2);
+    auto endTime2 = chrono::high_resolution_clock::now();
+    auto time2 = chrono::duration<double, milli>(endTime2 - startTime2).count();
 
-    cout << "Adding matrices using threading took " << elapsedSec(startTime2, endTime2) << " seconds" << endl;
-
+    cout << "Matrix size: " << NUM_ROWS << " x " << NUM_COLS << "\n";
+    cout << "Threads used: " << numThreads << "\n\n";
     cout << "Unthreaded sum = " << unthreadedTotalSum << "\n";
-    cout << "Threaded sum = " << threadedTotalSum << "\n";
+    cout << "Threaded total sum = " << threadedTotalSum << "\n";
+    cout << "Unthreaded time: " << time1 << " ms" << endl;
+    cout << "Threaded time: " << time2 << " ms" << endl;
 
 } // end main
