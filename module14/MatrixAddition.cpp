@@ -1,8 +1,7 @@
 #include <iostream>
-#include <iomanip>
-#include <ctime>
 #include <thread>
 #include <vector>
+#include <chrono>
 using namespace std;
 
 const int NUM_ROWS = 9000;
@@ -87,10 +86,10 @@ int main(void) {
     auto endTime2 = chrono::high_resolution_clock::now();
     auto time2 = chrono::duration<double, milli>(endTime2 - startTime2).count();
 
-    cout << "Matrix size: " << NUM_ROWS << " x " << NUM_COLS << "\n";
-    cout << "Threads used: " << numThreads << "\n\n";
-    cout << "Unthreaded sum = " << unthreadedTotalSum << "\n";
-    cout << "Threaded total sum = " << threadedTotalSum << "\n";
+    cout << "Matrix size: " << NUM_ROWS << " x " << NUM_COLS << endl;
+    cout << "Threads used: " << numThreads << endl;
+    cout << "Unthreaded sum = " << unthreadedTotalSum << endl;
+    cout << "Threaded total sum = " << threadedTotalSum << endl;
     cout << "Unthreaded time: " << time1 << " ms" << endl;
     cout << "Threaded time: " << time2 << " ms" << endl;
 
